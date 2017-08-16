@@ -10,6 +10,7 @@ import (
 )
 
 type scheduleCourse struct {
+	ID      string `json:"id"`
 	Subject struct {
 		ID    string `json:"id"`
 		Name  string `json:"name"`
@@ -22,60 +23,96 @@ type scheduleCourse struct {
 }
 
 type scheduleAPIResponse struct {
-	Office  Location `json:"office"`
-	Room    string   `json:"name"`
-	Periods struct {
-		Monday    []scheduleCourse `json:"1"`
-		Tuesday   []scheduleCourse `json:"2"`
-		Wednesday []scheduleCourse `json:"3"`
-		Thursday  []scheduleCourse `json:"4"`
-		Friday    []scheduleCourse `json:"5"`
-		Saturday  []scheduleCourse `json:"6"`
-		Sunday    []scheduleCourse `json:"7"`
-	} `json:"periods"`
+	OfficeID string                      `json:"office_id"`
+	Room     string                      `json:"name"`
+	RoomID   string                      `json:"id"`
+	Periods  map[string][]scheduleCourse `json:"periods"`
+	Office   struct {
+		Name string `json:"name"`
+	} `json:"office"`
 }
 
 var thisTime = time.Now()
 var thisYear = thisTime.Year()
 var thisMonth = int(thisTime.Month())
 
-var Schedule map[string]Courses
+// Schedules entire schedule for all locations
+var Schedules map[string]interface{}
 
 // GetCourses Get courses from the 3rd-party API
-func GetCourses() map[string]Courses {
-
+func GetCourses() {
+	Schedules = make(map[string]interface{})
 	for k := range Locations {
 		location := Locations[k]
 		for rk := range location.Rooms {
 			room := location.Rooms[rk]
-			apiURL := fmt.Sprintf("http://www.worldgymtaiwan.com/api/schedule_period/schedule?classroom_id=%s&office_id=%s&month=%d", location.ID, room.ID, thisMonth)
+			apiURL := fmt.Sprintf("http://www.worldgymtaiwan.com/api/schedule_period/schedule?classroom_id=%s&office_id=%s&month=%d", room.ID, location.ID, thisMonth)
 			resp, err := client.Get(apiURL)
 			if err != nil {
-				log.WithError(err).Panic("GetCourses")
+				log.WithError(err).Panic("GetCourses FromAPI")
+			} else {
+				log.WithFields(log.Fields{"Status": resp.StatusCode, "Location": location.ID, "Room": room.ID}).Info("GetCourses FromAPI")
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				log.WithError(err).Panic("GetCourses")
+				log.WithError(err).Panic("GetCourses Parse JSON")
 			}
 			var jsonBody scheduleAPIResponse
 			json.Unmarshal(body, &jsonBody)
 
-			Schedule = combCourses(jsonBody)
-			pushToFB(Schedule)
+			courses := combCourses(jsonBody)
+			pushToFB(courses)
+			Schedules[location.ID] = map[string]Courses{room.ID: courses}
 		}
 	}
-
-	return Schedule
 }
 
-func combCourses(body scheduleAPIResponse) map[string]Courses {
-	
+func combCourses(body scheduleAPIResponse) Courses {
+	schedule := make(map[string][]Course)
+	for _, day := range body.Periods {
+		for ci, c := range day {
+			course := Course{
+				ID:        c.ID,
+				Name:      c.Subject.Name,
+				Alias:     c.Subject.Alias,
+				Teacher:   c.Teacher,
+				Weekday:   string(ci),
+				StartTime: c.StartTime,
+				EndTime:   c.EndTime,
+				OfficeID:  body.OfficeID,
+				RoomID:    body.RoomID,
+				Month:     thisMonth,
+				Year:      thisYear,
+			}
+			weekday := time.Weekday(ci % 7).String()
+			schedule[weekday] = append(schedule[weekday], course)
+		}
+	}
+	courses := Courses{
+		OfficeName: body.Office.Name,
+		OfficeID:   body.OfficeID,
+		RoomName:   body.Room,
+		RoomID:     body.RoomID,
+		Month:      thisMonth,
+		Year:       thisYear,
+		Monday:     schedule["Monday"],
+		Tuesday:    schedule["Tuesday"],
+		Wednesday:  schedule["Wednesday"],
+		Thursday:   schedule["Thursday"],
+		Friday:     schedule["Friday"],
+		Saturday:   schedule["Saturday"],
+		Sunday:     schedule["Sunday"],
+	}
+	return courses
 }
 
-func pushToFB(courses map[string]Course) {
-	fb.Child(fmt.Sprintf("Courses/%d/%d", thisYear, thisMonth)).Remove()
-	if err := fb.Set() {
-		
+func pushToFB(courses Courses) {
+	fbURL := fmt.Sprintf("Courses/%d/%d/%s/%s", thisYear, thisMonth, courses.OfficeID, courses.RoomID)
+	fb.Child(fbURL).Remove()
+	if err := fb.Child(fbURL).Set(courses); err != nil {
+		log.WithError(err).Panic("GetCourses pushToFB")
+	} else {
+		log.WithFields(log.Fields{"Location": courses.OfficeName, "Room": courses.RoomName}).Info("GetCourses pushToFB")
 	}
 }

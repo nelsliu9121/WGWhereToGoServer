@@ -10,8 +10,7 @@ import (
 // Locations received from API
 var Locations map[string]Location
 
-// OfficeAPIResponse Type
-type OfficeAPIResponse struct {
+type officeAPIResponse struct {
 	Locations []Location `json:"data"`
 }
 
@@ -19,14 +18,14 @@ type OfficeAPIResponse struct {
 func GetLocations() map[string]Location {
 	resp, err := client.Get("http://www.worldgymtaiwan.com/api/office")
 	if err != nil {
-		log.WithError(err).Panic()
+		log.WithError(err).Panic("GetLocations")
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.WithError(err).Panic()
 	}
-	var jsonBody OfficeAPIResponse
+	var jsonBody officeAPIResponse
 	json.Unmarshal(body, &jsonBody)
 
 	Locations = make(map[string]Location)
@@ -38,9 +37,9 @@ func GetLocations() map[string]Location {
 
 	fb.Child("Locations").Remove()
 	if err := fb.Set(map[string]interface{}{"Locations": Locations}); err != nil {
-		log.WithError(err).Panic("GetLocations Save")
+		log.WithError(err).Panic("GetLocations pushToFB")
 	} else {
-		log.WithFields(log.Fields{"Count": len(Locations)}).Info("GetLocations Save")
+		log.WithFields(log.Fields{"Count": len(Locations)}).Info("GetLocations pushToFB")
 	}
 	return Locations
 }
