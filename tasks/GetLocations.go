@@ -15,7 +15,7 @@ type officeAPIResponse struct {
 }
 
 // GetLocations Get all locations available from 3rd-party API
-func GetLocations() map[string]Location {
+func GetLocations() {
 	resp, err := client.Get("http://www.worldgymtaiwan.com/api/office")
 	if err != nil {
 		log.WithError(err).Panic("GetLocations")
@@ -35,11 +35,9 @@ func GetLocations() map[string]Location {
 		Locations[d.ID] = d
 	}
 
-	fb.Child("Locations").Remove()
-	if err := fb.Set(map[string]interface{}{"Locations": Locations}); err != nil {
+	if err := fb.Child("Locations").Set(Locations); err != nil {
 		log.WithError(err).Panic("GetLocations pushToFB")
 	} else {
 		log.WithFields(log.Fields{"Count": len(Locations)}).Info("GetLocations pushToFB")
 	}
-	return Locations
 }

@@ -42,10 +42,8 @@ var Schedules map[string]interface{}
 // GetCourses Get courses from the 3rd-party API
 func GetCourses() {
 	Schedules = make(map[string]interface{})
-	for k := range Locations {
-		location := Locations[k]
-		for rk := range location.Rooms {
-			room := location.Rooms[rk]
+	for _, location := range Locations {
+		for _, room := range location.Rooms {
 			apiURL := fmt.Sprintf("http://www.worldgymtaiwan.com/api/schedule_period/schedule?classroom_id=%s&office_id=%s&month=%d", room.ID, location.ID, thisMonth)
 			resp, err := client.Get(apiURL)
 			if err != nil {
@@ -62,15 +60,15 @@ func GetCourses() {
 			json.Unmarshal(body, &jsonBody)
 
 			if len(jsonBody.OfficeID) > 0 && len(jsonBody.RoomID) > 0 {
-				courses := combCourses(jsonBody)
-				pushToFB(location.ID, room.ID, courses)
+				courses := parseCourses(jsonBody)
+				pushCoursesToFirebase(location.ID, room.ID, courses)
 				Schedules[location.ID] = map[string]Courses{room.ID: courses}
 			}
 		}
 	}
 }
 
-func combCourses(body scheduleAPIResponse) Courses {
+func parseCourses(body scheduleAPIResponse) Courses {
 	schedule := make(map[string][]Course)
 	for _, day := range body.Periods {
 		for ci, c := range day {
@@ -109,12 +107,11 @@ func combCourses(body scheduleAPIResponse) Courses {
 	return courses
 }
 
-func pushToFB(locationID string, roomID string, courses Courses) {
-	fbURL := fmt.Sprintf("Courses/%d/%d/%s/%s", thisYear, thisMonth, locationID, roomID)
-	fb.Child(fbURL).Remove()
+func pushCoursesToFirebase(locationID string, roomID string, courses Courses) {
+	fbURL := fmt.Sprintf("Courses/%s/%s/%d/%d", locationID, roomID, thisYear, thisMonth)
 	if err := fb.Child(fbURL).Set(courses); err != nil {
-		log.WithError(err).Panic("GetCourses pushToFB")
+		log.WithError(err).Panic("GetCourses pushCoursesToFirebase")
 	} else {
-		log.WithFields(log.Fields{"Location": locationID, "Room": roomID}).Info("GetCourses pushToFB")
+		log.WithFields(log.Fields{"Location": locationID, "Room": roomID}).Info("GetCourses pushCoursesToFirebase")
 	}
 }
