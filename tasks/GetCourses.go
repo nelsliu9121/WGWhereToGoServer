@@ -61,9 +61,11 @@ func GetCourses() {
 			var jsonBody scheduleAPIResponse
 			json.Unmarshal(body, &jsonBody)
 
-			courses := combCourses(jsonBody)
-			pushToFB(courses)
-			Schedules[location.ID] = map[string]Courses{room.ID: courses}
+			if len(jsonBody.OfficeID) > 0 && len(jsonBody.RoomID) > 0 {
+				courses := combCourses(jsonBody)
+				pushToFB(location.ID, room.ID, courses)
+				Schedules[location.ID] = map[string]Courses{room.ID: courses}
+			}
 		}
 	}
 }
@@ -73,46 +75,46 @@ func combCourses(body scheduleAPIResponse) Courses {
 	for _, day := range body.Periods {
 		for ci, c := range day {
 			course := Course{
-				ID:        c.ID,
-				Name:      c.Subject.Name,
-				Alias:     c.Subject.Alias,
-				Teacher:   c.Teacher,
-				Weekday:   string(ci),
-				StartTime: c.StartTime,
-				EndTime:   c.EndTime,
-				OfficeID:  body.OfficeID,
-				RoomID:    body.RoomID,
-				Month:     thisMonth,
-				Year:      thisYear,
+				ID:         c.ID,
+				Name:       c.Subject.Name,
+				Alias:      c.Subject.Alias,
+				Teacher:    c.Teacher,
+				Weekday:    string(ci),
+				StartTime:  c.StartTime,
+				EndTime:    c.EndTime,
+				LocationID: body.OfficeID,
+				RoomID:     body.RoomID,
+				Month:      thisMonth,
+				Year:       thisYear,
 			}
 			weekday := time.Weekday(ci % 7).String()
 			schedule[weekday] = append(schedule[weekday], course)
 		}
 	}
 	courses := Courses{
-		OfficeName: body.Office.Name,
-		OfficeID:   body.OfficeID,
-		RoomName:   body.Room,
-		RoomID:     body.RoomID,
-		Month:      thisMonth,
-		Year:       thisYear,
-		Monday:     schedule["Monday"],
-		Tuesday:    schedule["Tuesday"],
-		Wednesday:  schedule["Wednesday"],
-		Thursday:   schedule["Thursday"],
-		Friday:     schedule["Friday"],
-		Saturday:   schedule["Saturday"],
-		Sunday:     schedule["Sunday"],
+		LocationName: body.Office.Name,
+		LocationID:   body.OfficeID,
+		RoomName:     body.Room,
+		RoomID:       body.RoomID,
+		Month:        thisMonth,
+		Year:         thisYear,
+		Monday:       schedule["Monday"],
+		Tuesday:      schedule["Tuesday"],
+		Wednesday:    schedule["Wednesday"],
+		Thursday:     schedule["Thursday"],
+		Friday:       schedule["Friday"],
+		Saturday:     schedule["Saturday"],
+		Sunday:       schedule["Sunday"],
 	}
 	return courses
 }
 
-func pushToFB(courses Courses) {
-	fbURL := fmt.Sprintf("Courses/%d/%d/%s/%s", thisYear, thisMonth, courses.OfficeID, courses.RoomID)
+func pushToFB(locationID string, roomID string, courses Courses) {
+	fbURL := fmt.Sprintf("Courses/%d/%d/%s/%s", thisYear, thisMonth, locationID, roomID)
 	fb.Child(fbURL).Remove()
 	if err := fb.Child(fbURL).Set(courses); err != nil {
 		log.WithError(err).Panic("GetCourses pushToFB")
 	} else {
-		log.WithFields(log.Fields{"Location": courses.OfficeName, "Room": courses.RoomName}).Info("GetCourses pushToFB")
+		log.WithFields(log.Fields{"Location": locationID, "Room": roomID}).Info("GetCourses pushToFB")
 	}
 }
