@@ -5,6 +5,5 @@ import (
 )
 
 func main() {
-	tasks.GetLocations()
-	tasks.GetCourses()
+	tasks.Tasks()
 }
