@@ -12,7 +12,8 @@ import (
 var startOfThisMonth = time.Date(thisYear, time.Month(thisMonth), 1, 0, 0, 0, 0, thisTime.Location())
 
 type postsAPIResponse struct {
-	RecordCount int `json:"take"`
+	LocationID  string `json:"office_id"`
+	RecordCount int    `json:"take"`
 	Posts       []struct {
 		OfficeID  string `json:"office_id"`
 		PostID    string `json:"id"`
@@ -28,6 +29,17 @@ type postsAPIResponse struct {
 
 // GetPosts reads posts from API and store to Firebase
 func GetPosts() {
+	channel := make(chan postsAPIResponse)
+	go requestPosts(channel)
+	for jsonBody := range channel {
+		if jsonBody.RecordCount > 0 {
+			posts := parsePosts(jsonBody)
+			pushPostsToFirebase(jsonBody.LocationID, posts)
+		}
+	}
+}
+
+func requestPosts(channel chan<- postsAPIResponse) {
 	for _, location := range Locations {
 		apiURL := fmt.Sprintf("http://www.worldgymtaiwan.com/api/post?office_id=%s&sort=-released_at", location.ID)
 		resp, err := client.Get(apiURL)
@@ -43,12 +55,9 @@ func GetPosts() {
 		}
 		var jsonBody postsAPIResponse
 		json.Unmarshal(body, &jsonBody)
-
-		if jsonBody.RecordCount > 0 {
-			posts := parsePosts(jsonBody)
-			pushPostsToFirebase(location.ID, posts)
-		}
+		channel <- jsonBody
 	}
+	close(channel)
 }
 
 func parsePosts(body postsAPIResponse) []Post {

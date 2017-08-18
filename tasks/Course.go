@@ -2,32 +2,35 @@ package tasks
 
 // Course Type
 type Course struct {
-	ID         string
-	Name       string
-	Alias      string
-	Teacher    string
-	Weekday    string
-	StartTime  string
-	EndTime    string
-	LocationID string
-	RoomID     string
-	Month      int
-	Year       int
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Alias         string `json:"alias"`
+	Teacher       string `json:"teacher"`
+	Weekday       string `json:"weekday"`
+	StartTime     string `json:"startTime"`
+	EndTime       string `json:"endTime"`
+	LocationID    string `json:"locationID"`
+	RoomID        string `json:"roomID"`
+	CategoryID    string `json:"categoryID"`
+	CategoryName  string `json:"categoryName"`
+	CategoryColor string `json:"categoryColor"`
+	Month         int    `json:"month"`
+	Year          int    `json:"year"`
 }
 
 // Courses Type
 type Courses struct {
-	LocationName string
-	LocationID   string
-	RoomName     string
-	RoomID       string
-	Month        int
-	Year         int
-	Monday       []Course
-	Tuesday      []Course
-	Wednesday    []Course
-	Thursday     []Course
-	Friday       []Course
-	Saturday     []Course
-	Sunday       []Course
+	LocationName string   `json:"locationName"`
+	LocationID   string   `json:"locationID"`
+	RoomName     string   `json:"roomName"`
+	RoomID       string   `json:"roomID"`
+	Month        int      `json:"month"`
+	Year         int      `json:"year"`
+	Monday       []Course `json:"monday"`
+	Tuesday      []Course `json:"tuesday"`
+	Wednesday    []Course `json:"wednesday"`
+	Thursday     []Course `json:"thursday"`
+	Friday       []Course `json:"friday"`
+	Saturday     []Course `json:"saturday"`
+	Sunday       []Course `json:"sunday"`
 }

@@ -2,11 +2,11 @@ package tasks
 
 // Post Type
 type Post struct {
-	ID           string
-	Name         string
-	Content      string
-	CreatedAt    string
-	LocationID   string
-	CategoryID   string
-	CategoryName string
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Content      string `json:"content"`
+	CreatedAt    string `json:"createdAt"`
+	LocationID   string `json:"locationID"`
+	CategoryID   string `json:"categoryID"`
+	CategoryName string `json:"categoryName"`
 }
