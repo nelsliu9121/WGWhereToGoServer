@@ -2,13 +2,19 @@ package tasks
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 
+	utils "github.com/nelsliu9121/wgwheretogoserver/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 // Locations received from API
 var Locations map[string]Location
+
+var storage = utils.Storage{
+	Bucket: "wgwheretogo.appspot.com",
+}
 
 type officeAPIResponse struct {
 	Locations []struct {
@@ -61,7 +67,8 @@ func GetLocations() {
 
 func parseLocation(body officeAPIResponse) map[string]Location {
 	locations := make(map[string]Location)
-	for l := range body.Locations {
+	for _, l := range body.Locations {
+		putImageToFirebase(l.Photo, l.ID)
 		location := Location{
 			ID:      l.ID,
 			Name:    l.Name,
@@ -78,4 +85,20 @@ func parseLocation(body officeAPIResponse) map[string]Location {
 		locations[l.ID] = location
 	}
 	return locations
+}
+
+func putImageToFirebase(url string, locationID string) map[string]interface{} {
+	res, err := client.Get(fmt.Sprintf("http://www.worldgymtaiwan.com/imagefly/w330-h240-c/uploads/%s", url))
+	if err != nil {
+		log.WithError(err).Panic("putImageToFirebase Failed to download image")
+	}
+	defer res.Body.Close()
+
+	path, err := storage.Put(res.Body, fmt.Sprintf("/Locations/%s.jpg", locationID))
+	if err != nil {
+		log.WithError(err).Panic("putImageToFirebase Failed to upload to Firebase")
+	} else {
+		log.WithFields(log.Fields{"Return": path}).Info("putImageToFirebase")
+	}
+	return path
 }

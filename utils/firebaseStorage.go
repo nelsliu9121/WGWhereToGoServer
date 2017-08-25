@@ -6,18 +6,15 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
+// Storage Reference
 type Storage struct {
-	Bucket       string
-	Token        string
-	RefreshToken string
-	APIKey       string
+	Bucket string
 }
 
 func (s *Storage) resource(path string) string {
@@ -30,7 +27,7 @@ func (s *Storage) client() *http.Client {
 		log.WithError(err).Panic()
 	}
 
-	conf, err := google.JWTConfigFromJSON(d, "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/firebase.storage")
+	conf, err := google.JWTConfigFromJSON(d, "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/devstorage.read_write")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,7 +43,7 @@ func (s *Storage) request(verb string, loc string, data io.Reader) (map[string]i
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &s.client()
+	client := s.client()
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -74,14 +71,8 @@ func (s *Storage) Object(path string) (map[string]interface{}, error) {
 }
 
 // Put will store a file in Firebase Storage
-func (s *Storage) Put(file, path string) (map[string]interface{}, error) {
-	data, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer data.Close()
-
-	res, err := s.request("PUT", s.resource(path), data)
+func (s *Storage) Put(data io.Reader, path string) (map[string]interface{}, error) {
+	res, err := s.request("POST", s.resource(path), data)
 	if err != nil {
 		return nil, err
 	}
