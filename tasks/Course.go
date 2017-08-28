@@ -38,13 +38,9 @@ type Courses struct {
 
 // CourseType Course Type
 type CourseType struct {
-	ID      string   `json:"id"`
-	Name    string   `json:"name"`
-	Classes []Course `json:"classes"`
-}
-
-// AppendClass helper func to append to Classes
-func (ct *CourseType) AppendClass(item Course) []Course {
-	ct.Classes = append(ct.Classes, item)
-	return ct.Classes
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	CategoryID    string `json:"categoryID"`
+	CategoryName  string `json:"categoryName"`
+	CategoryColor string `json:"categoryColor"`
 }

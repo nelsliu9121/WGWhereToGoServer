@@ -129,16 +129,12 @@ func parseCourses(body scheduleAPIResponse) Courses {
 			}
 			weekday := time.Weekday(ci % 7).String()
 			if course.SubjectID != "" {
-				if CourseTypes[course.SubjectID].ID != "" {
-					ct := CourseTypes[course.SubjectID]
-					ct.Classes = ct.AppendClass(course)
-					CourseTypes[course.SubjectID] = ct
-				} else {
-					CourseTypes[course.SubjectID] = CourseType{
-						ID:      course.SubjectID,
-						Name:    course.Name,
-						Classes: []Course{course},
-					}
+				CourseTypes[course.SubjectID] = CourseType{
+					ID:            course.SubjectID,
+					CategoryID:    course.CategoryID,
+					CategoryName:  course.CategoryName,
+					CategoryColor: course.CategoryColor,
+					Name:          course.Name,
 				}
 			}
 			schedule[weekday] = append(schedule[weekday], course)
