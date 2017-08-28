@@ -41,16 +41,18 @@ var thisTime = time.Now()
 var thisYear = thisTime.Year()
 var thisMonth = int(thisTime.Month())
 
+// var nextMonth = int(thisTime.Month()) + 1
+
 // Schedules entire schedule for all locations
 var Schedules map[string]interface{}
 
 // CourseTypes storing unique course types
-var CourseTypes map[string]string
+var CourseTypes map[string]CourseType
 
 // GetCourses Get courses from the 3rd-party API
 func GetCourses() {
 	Schedules = make(map[string]interface{})
-	CourseTypes = make(map[string]string)
+	CourseTypes = make(map[string]CourseType)
 	channel := make(chan scheduleAPIResponse)
 	go requestCourses(channel)
 	for jsonBody := range channel {
@@ -95,7 +97,7 @@ func pushCoursesToFirebase(locationID string, roomID string, courses Courses) {
 	}
 }
 
-func pushCourseTypesToFirebase(ct map[string]string) {
+func pushCourseTypesToFirebase(ct map[string]CourseType) {
 	fbURL := "Courses/Types"
 	if err := fb.Child(fbURL).Set(ct); err != nil {
 		log.WithError(err).Panic("GetCourses pushCourseTypesToFirebase")
@@ -127,7 +129,17 @@ func parseCourses(body scheduleAPIResponse) Courses {
 			}
 			weekday := time.Weekday(ci % 7).String()
 			if course.SubjectID != "" {
-				CourseTypes[course.SubjectID] = course.Name
+				if CourseTypes[course.SubjectID].ID != "" {
+					ct := CourseTypes[course.SubjectID]
+					ct.Classes = ct.AppendClass(course)
+					CourseTypes[course.SubjectID] = ct
+				} else {
+					CourseTypes[course.SubjectID] = CourseType{
+						ID:      course.SubjectID,
+						Name:    course.Name,
+						Classes: []Course{course},
+					}
+				}
 			}
 			schedule[weekday] = append(schedule[weekday], course)
 		}
