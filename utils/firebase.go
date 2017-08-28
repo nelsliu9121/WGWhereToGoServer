@@ -2,6 +2,7 @@ package utils
 
 import (
 	"io/ioutil"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/zabawaba99/firego"
@@ -11,7 +12,7 @@ import (
 
 // Firebase Create a Firebase access point
 func Firebase() *firego.Firebase {
-	d, err := ioutil.ReadFile("./config/firebase.json")
+	d, err := ioutil.ReadFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
 	if err != nil {
 		log.WithError(err).Panic()
 	}

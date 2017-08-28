@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,7 +13,7 @@ import (
 // Locations received from API
 var Locations map[string]Location
 
-var storage = utils.Storage{
+var s = utils.Storage{
 	Bucket: "wgwheretogo.appspot.com",
 }
 
@@ -57,7 +58,9 @@ func GetLocations() {
 	json.Unmarshal(body, &jsonBody)
 
 	Locations = parseLocation(jsonBody)
-
+	channel := make(chan map[string]string)
+	go parseLocationImages(channel, Locations)
+	go putImagesToFirebase(channel)
 	if err := fb.Child("Locations").Set(Locations); err != nil {
 		log.WithError(err).Panic("GetLocations pushToFB")
 	} else {
@@ -68,7 +71,6 @@ func GetLocations() {
 func parseLocation(body officeAPIResponse) map[string]Location {
 	locations := make(map[string]Location)
 	for _, l := range body.Locations {
-		putImageToFirebase(l.Photo, l.ID)
 		location := Location{
 			ID:      l.ID,
 			Name:    l.Name,
@@ -77,7 +79,7 @@ func parseLocation(body officeAPIResponse) map[string]Location {
 			Zip:     l.Zip,
 			Address: l.Address,
 			Map:     l.Map,
-			Photo:   l.Photo,
+			Photo:   fmt.Sprintf("Locations/%s.jpg", l.ID),
 			City:    l.City,
 			Rooms:   l.Rooms,
 			Geo:     l.Geocoding[0].Geometry.Location,
@@ -87,18 +89,31 @@ func parseLocation(body officeAPIResponse) map[string]Location {
 	return locations
 }
 
-func putImageToFirebase(url string, locationID string) map[string]interface{} {
+func parseLocationImages(channel chan<- map[string]string, locations map[string]Location) {
+	for _, l := range locations {
+		channel <- map[string]string{"ID": l.ID, "Photo": l.Photo}
+	}
+	close(channel)
+}
+
+func putImagesToFirebase(channel chan map[string]string) {
+	for p := range channel {
+		putImageToFirebase(p["Photo"], p["ID"])
+	}
+}
+
+func putImageToFirebase(url string, locationID string) string {
 	res, err := client.Get(fmt.Sprintf("http://www.worldgymtaiwan.com/imagefly/w330-h240-c/uploads/%s", url))
 	if err != nil {
 		log.WithError(err).Panic("putImageToFirebase Failed to download image")
 	}
 	defer res.Body.Close()
 
-	path, err := storage.Put(res.Body, fmt.Sprintf("/Locations/%s.jpg", locationID))
+	_, attrs, err := s.Put(context.Background(), res.Body, fmt.Sprintf("Locations/%s.jpg", locationID))
 	if err != nil {
 		log.WithError(err).Panic("putImageToFirebase Failed to upload to Firebase")
 	} else {
-		log.WithFields(log.Fields{"Return": path}).Info("putImageToFirebase")
+		log.WithFields(log.Fields{"Name": attrs.Name}).Info("putImageToFirebase")
 	}
-	return path
+	return fmt.Sprintf("https://firebasestorage.googleapis.com/v0/b/wgwheretogo.appspot.com/o/%s?alt=media", attrs.Name)
 }

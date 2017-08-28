@@ -3,6 +3,7 @@ package tasks
 // Course Type
 type Course struct {
 	ID            string `json:"id"`
+	SubjectID     string `json:"subjectId"`
 	Name          string `json:"name"`
 	Alias         string `json:"alias"`
 	Teacher       string `json:"teacher"`

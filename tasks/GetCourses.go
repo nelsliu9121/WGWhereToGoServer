@@ -44,9 +44,13 @@ var thisMonth = int(thisTime.Month())
 // Schedules entire schedule for all locations
 var Schedules map[string]interface{}
 
+// CourseTypes storing unique course types
+var CourseTypes map[string]string
+
 // GetCourses Get courses from the 3rd-party API
 func GetCourses() {
 	Schedules = make(map[string]interface{})
+	CourseTypes = make(map[string]string)
 	channel := make(chan scheduleAPIResponse)
 	go requestCourses(channel)
 	for jsonBody := range channel {
@@ -56,19 +60,18 @@ func GetCourses() {
 			go pushCoursesToFirebase(jsonBody.OfficeID, jsonBody.RoomID, courses)
 		}
 	}
+	pushCourseTypesToFirebase(CourseTypes)
 }
 
 func requestCourses(channel chan<- scheduleAPIResponse) {
 	for _, location := range Locations {
 		for _, room := range location.Rooms {
-			startTime := time.Now()
 			apiURL := fmt.Sprintf("http://www.worldgymtaiwan.com/api/schedule_period/schedule?classroom_id=%s&office_id=%s&month=%d", room.ID, location.ID, thisMonth)
 			resp, err := client.Get(apiURL)
-			elapsedTime := time.Since(startTime).Seconds()
 			if err != nil {
 				log.WithError(err).Panic("GetCourses FromAPI")
 			} else {
-				log.WithFields(log.Fields{"Location": location.ID, "Room": room.ID, "Elapsed": elapsedTime}).Info("GetCourses FromAPI")
+				log.WithFields(log.Fields{"Location": location.ID, "Room": room.ID}).Info("GetCourses FromAPI")
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
@@ -92,12 +95,22 @@ func pushCoursesToFirebase(locationID string, roomID string, courses Courses) {
 	}
 }
 
+func pushCourseTypesToFirebase(ct map[string]string) {
+	fbURL := "Courses/Types"
+	if err := fb.Child(fbURL).Set(ct); err != nil {
+		log.WithError(err).Panic("GetCourses pushCourseTypesToFirebase")
+	} else {
+		log.WithFields(log.Fields{"CourseTypes": len(ct)}).Info("GetCourses pushCourseTypesToFirebase")
+	}
+}
+
 func parseCourses(body scheduleAPIResponse) Courses {
 	schedule := make(map[string][]Course)
 	for _, day := range body.Periods {
 		for ci, c := range day {
 			course := Course{
 				ID:            c.ID,
+				SubjectID:     c.Subject.ID,
 				Name:          c.Subject.Name,
 				Alias:         c.Subject.Alias,
 				Teacher:       c.Teacher,
@@ -113,6 +126,9 @@ func parseCourses(body scheduleAPIResponse) Courses {
 				Year:          thisYear,
 			}
 			weekday := time.Weekday(ci % 7).String()
+			if course.SubjectID != "" {
+				CourseTypes[course.SubjectID] = course.Name
+			}
 			schedule[weekday] = append(schedule[weekday], course)
 		}
 	}
