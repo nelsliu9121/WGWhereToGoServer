@@ -1,1 +1,1 @@
-wgwheretogoserver
+WGWhereToGoServer

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	utils "github.com/nelsliu9121/wgwheretogoserver/utils"
+	utils "github.com/nelsliu9121/WGWhereToGoServer/utils"
 	log "github.com/sirupsen/logrus"
 )
 

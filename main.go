@@ -5,7 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/nelsliu9121/wgwheretogoserver/tasks"
+	"github.com/nelsliu9121/WGWhereToGoServer/tasks"
 )
 
 func getEverythingEndpoints(writer http.ResponseWriter, req *http.Request) {

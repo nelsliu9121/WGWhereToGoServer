@@ -3,7 +3,7 @@ package tasks
 import (
 	"net/http"
 
-	utils "github.com/nelsliu9121/wgwheretogoserver/utils"
+	utils "github.com/nelsliu9121/WGWhereToGoServer/utils"
 	"github.com/robfig/cron"
 )
 
