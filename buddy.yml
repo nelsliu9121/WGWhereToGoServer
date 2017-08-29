@@ -9,8 +9,9 @@
     execute_commands:
     - "export GOPATH=/"
     - "export GO15VENDOREXPERIMENT=1"
+    - "go clean"
     - "go get"
-    - "go build main.go"
+    - "go build"
   - action: "Deploy to Google App Engine/WGWhereToGo"
     type: "GOOGLE_APP_ENGINE"
     local_path: "/"
