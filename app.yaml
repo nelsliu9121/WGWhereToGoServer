@@ -1,7 +1,8 @@
 runtime: go
+env: flex
 api_version: go1.8
 env_variables:
-  GOOGLE_APPLICATION_CREDENTIALS: "/firebase.json"
+  GOOGLE_APPLICATION_CREDENTIALS: "/buddy/firebase.json"
 
 handlers:
 - url: /.*
