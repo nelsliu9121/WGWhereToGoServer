@@ -1,26 +1,20 @@
 package utils
 
 import (
-	"io/ioutil"
-	"os"
+	"context"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/zabawaba99/firego"
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
 // Firebase Create a Firebase access point
 func Firebase() *firego.Firebase {
-	d, err := ioutil.ReadFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+	client, err := google.DefaultClient(context.Background(), "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/firebase.database")
+
 	if err != nil {
-		log.WithError(err).Panic()
+		log.WithError(err).Fatal("firebase")
 	}
 
-	conf, err := google.JWTConfigFromJSON(d, "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/firebase.database")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return firego.New("https://wgwheretogo.firebaseio.com/", conf.Client(oauth2.NoContext))
+	return firego.New("https://wgwheretogo.firebaseio.com/", client)
 }
