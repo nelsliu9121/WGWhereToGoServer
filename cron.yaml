@@ -1,0 +1,7 @@
+cron:
+- description: everything
+  url: /everything
+  schedule: "1 of month 02:00"
+- description: posts
+  url: /posts
+  schedule: "every day 02:00"

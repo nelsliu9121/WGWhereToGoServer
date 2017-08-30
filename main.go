@@ -34,9 +34,9 @@ func main() {
 	http.HandleFunc("/locations", getLocationsEndpoint)
 	http.HandleFunc("/courses", getCoursesEndpoint)
 	http.HandleFunc("/posts", getPostsEndpoint)
-	if err := http.ListenAndServe(":3030", nil); err != nil {
+	if err := http.ListenAndServe(":80", nil); err != nil {
 		log.WithError(err).Panic("Start HTTP Services")
 	} else {
-		log.Info("HTTP Service Started at port 3030")
+		log.Info("HTTP Service Started at port 80")
 	}
 }
