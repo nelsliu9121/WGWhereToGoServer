@@ -61,10 +61,14 @@ func GetLocations() {
 	channel := make(chan map[string]string)
 	go parseLocationImages(channel, Locations)
 	go putImagesToFirebase(channel)
-	if err := fb.Child("Locations").Set(Locations); err != nil {
+	go pushLocationsToFirebase(Locations)
+}
+
+func pushLocationsToFirebase(locations map[string]Location) {
+	if err := fb.Child("Locations").Set(locations); err != nil {
 		log.WithError(err).Panic("GetLocations pushToFB")
 	} else {
-		log.WithFields(log.Fields{"Count": len(Locations)}).Info("GetLocations pushToFB")
+		log.WithFields(log.Fields{"Count": len(locations)}).Info("GetLocations pushToFB")
 	}
 }
 
