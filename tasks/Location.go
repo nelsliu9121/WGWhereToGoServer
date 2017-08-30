@@ -16,7 +16,7 @@ type Location struct {
 		Name string `json:"name"`
 	} `json:"classrooms"`
 	Geo struct {
-		Long float32 `json:"lng"`
-		Lat  float32 `json:"lat"`
+		Long float64 `json:"lng"`
+		Lat  float64 `json:"lat"`
 	} `json:"geo"`
 }

@@ -35,8 +35,8 @@ type officeAPIResponse struct {
 		Geocoding []struct {
 			Geometry struct {
 				Location struct {
-					Long float32 `json:"lng"`
-					Lat  float32 `json:"lat"`
+					Long float64 `json:"lng"`
+					Lat  float64 `json:"lat"`
 				} `json:"location"`
 			} `json:"geometry"`
 		} `json:"geocoding"`
