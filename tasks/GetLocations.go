@@ -113,6 +113,12 @@ func putImageToFirebase(url string, locationID string) string {
 	}
 	defer res.Body.Close()
 
+	origAttrs, err := s.Attrs(context.Background(), fmt.Sprintf("Locations/%s.jpg", locationID))
+	if err == nil && origAttrs.Name != "" {
+		log.WithFields(log.Fields{"Name": origAttrs.Name}).Info("putImageToFirebase File exists")
+		return fmt.Sprintf("https://firebasestorage.googleapis.com/v0/b/wgwheretogo.appspot.com/o/%s?alt=media", origAttrs.Name)
+	}
+
 	_, attrs, err := s.Put(context.Background(), res.Body, fmt.Sprintf("Locations/%s.jpg", locationID))
 	if err != nil {
 		log.WithError(err).Panic("putImageToFirebase Failed to upload to Firebase")

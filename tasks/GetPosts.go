@@ -55,6 +55,7 @@ func requestPosts(channel chan<- postsAPIResponse) {
 		}
 		var jsonBody postsAPIResponse
 		json.Unmarshal(body, &jsonBody)
+		jsonBody.LocationID = location.ID
 		channel <- jsonBody
 	}
 	close(channel)

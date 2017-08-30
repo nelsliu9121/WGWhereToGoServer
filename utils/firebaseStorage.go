@@ -50,3 +50,19 @@ func (s *Storage) Put(ctx context.Context, data io.Reader, path string) (*storag
 	attrs, err := obj.Attrs(ctx)
 	return obj, attrs, err
 }
+
+// Attrs query object attrs
+func (s *Storage) Attrs(ctx context.Context, path string) (*storage.ObjectAttrs, error) {
+	client, err := s.client(ctx)
+	if err != nil {
+		log.WithError(err).Panic()
+	}
+	defer client.Close()
+
+	o := client.Bucket(s.Bucket).Object(path)
+	attrs, err := o.Attrs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return attrs, nil
+}
