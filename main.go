@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
+	"google.golang.org/appengine"
 
 	"github.com/nelsliu9121/WGWhereToGoServer/tasks"
 )
@@ -34,9 +34,5 @@ func main() {
 	http.HandleFunc("/locations", getLocationsEndpoint)
 	http.HandleFunc("/courses", getCoursesEndpoint)
 	http.HandleFunc("/posts", getPostsEndpoint)
-	if err := http.ListenAndServe(":80", nil); err != nil {
-		log.WithError(err).Panic("Start HTTP Services")
-	} else {
-		log.Info("HTTP Service Started at port 80")
-	}
+	appengine.Main()
 }
