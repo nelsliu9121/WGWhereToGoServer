@@ -44,10 +44,19 @@ func (s *Storage) Put(ctx context.Context, data io.Reader, path string) (*storag
 	if err := writer.Close(); err != nil {
 		log.WithError(err).Panic()
 	}
+
+	attrsToUpdate := storage.ObjectAttrsToUpdate{
+		ContentType: "image/jpeg",
+	}
+	attrs, err := obj.Update(ctx, attrsToUpdate)
+	if err != nil {
+		log.WithError(err).Panic()
+	}
+
 	if err := obj.ACL().Set(ctx, storage.AllUsers, storage.RoleReader); err != nil {
 		log.WithError(err).Panic()
 	}
-	attrs, err := obj.Attrs(ctx)
+
 	return obj, attrs, err
 }
 
