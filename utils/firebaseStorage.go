@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 
 	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
@@ -28,7 +29,7 @@ func (s *Storage) client(ctx context.Context) (*storage.Client, error) {
 }
 
 // Put will store a file in Firebase Storage
-func (s *Storage) Put(ctx context.Context, data io.Reader, path string) (*storage.ObjectHandle, *storage.ObjectAttrs, error) {
+func (s *Storage) Put(ctx context.Context, data io.Reader, header http.Header, path string) (*storage.ObjectHandle, *storage.ObjectAttrs, error) {
 	client, err := s.client(ctx)
 	if err != nil {
 		log.WithError(err).Panic()
@@ -46,7 +47,7 @@ func (s *Storage) Put(ctx context.Context, data io.Reader, path string) (*storag
 	}
 
 	attrsToUpdate := storage.ObjectAttrsToUpdate{
-		ContentType: "image/jpeg",
+		ContentType: header.Get("Content-Type"),
 	}
 	attrs, err := obj.Update(ctx, attrsToUpdate)
 	if err != nil {

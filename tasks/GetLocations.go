@@ -59,7 +59,7 @@ func GetLocations() {
 
 	Locations = parseLocation(jsonBody)
 	channel := make(chan map[string]string)
-	go parseLocationImages(channel, Locations)
+	go parseLocationImages(channel, jsonBody)
 	go putImagesToFirebase(channel)
 	go pushLocationsToFirebase(Locations)
 }
@@ -93,8 +93,8 @@ func parseLocation(body officeAPIResponse) map[string]Location {
 	return locations
 }
 
-func parseLocationImages(channel chan<- map[string]string, locations map[string]Location) {
-	for _, l := range locations {
+func parseLocationImages(channel chan<- map[string]string, body officeAPIResponse) {
+	for _, l := range body.Locations {
 		channel <- map[string]string{"ID": l.ID, "Photo": l.Photo}
 	}
 	close(channel)
@@ -119,7 +119,7 @@ func putImageToFirebase(url string, locationID string) string {
 		return fmt.Sprintf("https://firebasestorage.googleapis.com/v0/b/wgwheretogo.appspot.com/o/%s?alt=media", origAttrs.Name)
 	}
 
-	_, attrs, err := s.Put(context.Background(), res.Body, fmt.Sprintf("Locations/%s.jpg", locationID))
+	_, attrs, err := s.Put(context.Background(), res.Body, res.Header, fmt.Sprintf("Locations/%s.jpg", locationID))
 	if err != nil {
 		log.WithError(err).Panic("putImageToFirebase Failed to upload to Firebase")
 	} else {
