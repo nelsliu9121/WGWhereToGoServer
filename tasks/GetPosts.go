@@ -9,8 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var startOfThisMonth = time.Date(thisYear, time.Month(thisMonth), 1, 0, 0, 0, 0, thisTime.Location())
-
 type postsAPIResponse struct {
 	LocationID  string `json:"office_id"`
 	RecordCount int    `json:"take"`
@@ -29,11 +27,13 @@ type postsAPIResponse struct {
 
 // GetPosts reads posts from API and store to Firebase
 func GetPosts() {
+	thisYear, thisMonth, _ := time.Now().Date()
+	startOfThisMonth := time.Date(thisYear, thisMonth, 1, 0, 0, 0, 0, time.Now().Location())
 	channel := make(chan postsAPIResponse)
 	go requestPosts(channel)
 	for jsonBody := range channel {
 		if jsonBody.RecordCount > 0 {
-			posts := parsePosts(jsonBody)
+			posts := parsePosts(jsonBody, startOfThisMonth)
 			pushPostsToFirebase(jsonBody.LocationID, posts)
 		}
 	}
@@ -61,7 +61,7 @@ func requestPosts(channel chan<- postsAPIResponse) {
 	close(channel)
 }
 
-func parsePosts(body postsAPIResponse) []Post {
+func parsePosts(body postsAPIResponse, startOfThisMonth time.Time) []Post {
 	var posts []Post
 	skippedCount := 0
 	for _, p := range body.Posts {
@@ -90,7 +90,8 @@ func parsePosts(body postsAPIResponse) []Post {
 }
 
 func pushPostsToFirebase(locationID string, posts []Post) {
-	fbURL := fmt.Sprintf("Posts/%s/%d/%d", locationID, thisYear, thisMonth)
+	thisYear, thisMonth, _ := time.Now().Date()
+	fbURL := fmt.Sprintf("Posts/%s/%d/%d", locationID, thisYear, int(thisMonth))
 	if err := fb.Child(fbURL).Set(posts); err != nil {
 		log.WithError(err).Panic("GetPosts pushPostsToFirebase")
 	} else {
