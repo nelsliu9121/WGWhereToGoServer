@@ -37,11 +37,7 @@ type scheduleAPIResponse struct {
 	} `json:"office"`
 }
 
-var thisTime = time.Now()
-var thisYear = thisTime.Year()
-var thisMonth = int(thisTime.Month())
-
-// var nextMonth = int(thisTime.Month()) + 1
+// var nextMonth = int(time.Now().Month()) + 1
 
 // Schedules entire schedule for all locations
 var Schedules map[string]interface{}
@@ -68,12 +64,12 @@ func GetCourses() {
 func requestCourses(channel chan<- scheduleAPIResponse) {
 	for _, location := range Locations {
 		for _, room := range location.Rooms {
-			apiURL := fmt.Sprintf("http://www.worldgymtaiwan.com/api/schedule_period/schedule?classroom_id=%s&office_id=%s&month=%d", room.ID, location.ID, thisMonth)
+			apiURL := fmt.Sprintf("http://www.worldgymtaiwan.com/api/schedule_period/schedule?classroom_id=%s&office_id=%s&month=%d", room.ID, location.ID, int(time.Now().Month()))
 			resp, err := client.Get(apiURL)
 			if err != nil {
 				log.WithError(err).Panic("GetCourses FromAPI")
 			} else {
-				log.WithFields(log.Fields{"Location": location.ID, "Room": room.ID}).Info("GetCourses FromAPI")
+				log.WithFields(log.Fields{"Location": location.ID, "Room": room.ID, "Month": int(time.Now().Month())}).Info("GetCourses FromAPI")
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
@@ -89,11 +85,11 @@ func requestCourses(channel chan<- scheduleAPIResponse) {
 }
 
 func pushCoursesToFirebase(locationID string, roomID string, courses Courses) {
-	fbURL := fmt.Sprintf("Courses/%s/%s/%d/%d", locationID, roomID, thisYear, thisMonth)
+	fbURL := fmt.Sprintf("Courses/%s/%s/%d/%d", locationID, roomID, time.Now().Year(), int(time.Now().Month()))
 	if err := fb.Child(fbURL).Set(courses); err != nil {
 		log.WithError(err).Panic("GetCourses pushCoursesToFirebase")
 	} else {
-		log.WithFields(log.Fields{"Location": locationID, "Room": roomID}).Info("GetCourses pushCoursesToFirebase")
+		log.WithFields(log.Fields{"Location": locationID, "Room": roomID, "Month": int(time.Now().Month())}).Info("GetCourses pushCoursesToFirebase")
 	}
 }
 
@@ -124,8 +120,8 @@ func parseCourses(body scheduleAPIResponse) Courses {
 				CategoryID:    c.Subject.Course.ID,
 				CategoryName:  c.Subject.Course.Name,
 				CategoryColor: c.Subject.Course.Color,
-				Month:         thisMonth,
-				Year:          thisYear,
+				Month:         int(time.Now().Month()),
+				Year:          time.Now().Year(),
 			}
 			weekday := time.Weekday(ci % 7).String()
 			if course.SubjectID != "" {
@@ -145,8 +141,8 @@ func parseCourses(body scheduleAPIResponse) Courses {
 		LocationID:   body.OfficeID,
 		RoomName:     body.Room,
 		RoomID:       body.RoomID,
-		Month:        thisMonth,
-		Year:         thisYear,
+		Month:        int(time.Now().Month()),
+		Year:         time.Now().Year(),
 		Monday:       schedule["Monday"],
 		Tuesday:      schedule["Tuesday"],
 		Wednesday:    schedule["Wednesday"],
